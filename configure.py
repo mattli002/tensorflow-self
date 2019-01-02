@@ -1558,6 +1558,7 @@ def main():
   setup_python(environ_cp)
 
   if is_windows():
+    environ_cp['TF_NEED_JEMALLOC'] = '0'
     environ_cp['TF_NEED_OPENCL_SYCL'] = '0'
     environ_cp['TF_NEED_COMPUTECPP'] = '0'
     environ_cp['TF_NEED_OPENCL'] = '0'
@@ -1570,6 +1571,7 @@ def main():
     environ_cp['TF_SET_ANDROID_WORKSPACE'] = '0'
 
   if is_macos():
+    environ_cp['TF_NEED_JEMALLOC'] = '0'
     environ_cp['TF_NEED_TENSORRT'] = '0'
 
   # The numpy package on ppc64le uses OpenBLAS which has multi-threading
@@ -1581,6 +1583,10 @@ def main():
 
   set_build_var(environ_cp, 'TF_NEED_IGNITE', 'Apache Ignite',
                 'with_ignite_support', True, 'ignite')
+
+  set_build_var(environ_cp, 'TF_NEED_JEMALLOC', 'jemalloc as malloc',
+                'with_jemalloc', True)
+
   xla_enabled_by_default = is_linux()
   set_build_var(environ_cp, 'TF_ENABLE_XLA', 'XLA JIT', 'with_xla_support',
                 xla_enabled_by_default, 'xla')

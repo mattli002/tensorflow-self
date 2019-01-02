@@ -137,6 +137,14 @@ genrule(
         "@snappy//:COPYING",
         "@zlib_archive//:zlib.h",
     ] + select({
+        "//tensorflow:with_jemalloc_linux_x86_64": [
+            "@jemalloc//:COPYING",
+        ],
+        "//tensorflow:with_jemalloc_linux_ppc64le": [
+            "@jemalloc//:COPYING",
+        ],
+        "//conditions:default": [],
+    }) + select({
         "//tensorflow/core/kernels:xsmm": [
             "@libxsmm_archive//:LICENSE.md",
         ],
@@ -194,6 +202,14 @@ genrule(
         "@snappy//:COPYING",
         "@zlib_archive//:zlib.h",
     ] + select({
+        "//tensorflow:with_jemalloc_linux_x86_64": [
+            "@jemalloc//:COPYING",
+        ],
+        "//tensorflow:with_jemalloc_linux_ppc64le": [
+            "@jemalloc//:COPYING",
+        ],
+        "//conditions:default": [],
+    }) + select({
         "//tensorflow/core/kernels:xsmm": [
             "@libxsmm_archive//:LICENSE.md",
         ],
