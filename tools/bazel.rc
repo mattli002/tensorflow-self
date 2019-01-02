@@ -26,6 +26,7 @@ build --define framework_shared_object=true
 # environment variable "TF_MKL_ROOT" every time before build.
 build:mkl --define=build_with_mkl=true --define=enable_mkl=true
 build:mkl -c opt
+build --define=with_jemalloc=true
 
 # This config option is used to enable MKL-DNN open source library only,
 # without depending on MKL binary version.
