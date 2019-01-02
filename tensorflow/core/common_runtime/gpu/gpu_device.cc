@@ -1041,17 +1041,21 @@ Status BaseGPUDeviceFactory::CreateDevices(const SessionOptions& options,
   LocalityMap device_localities;
   TF_RETURN_IF_ERROR(
       GetDeviceLocalities(num_tf_gpus, interconnect_maps, &device_localities));
-
+  LOG(INFO) << "## L" << std::to_string(__LINE__);
   // Build the GPUDevices
   CHECK_EQ(next_tf_gpu_id, memory_limit_bytes.size());
+  LOG(INFO) << "## L" << std::to_string(__LINE__);
   for (int di = 0; di < num_tf_gpus; ++di) {
     TfGpuId tf_gpu_id(di);
     int64 bytes = memory_limit_bytes[di];
+    LOG(INFO) << "## L" << std::to_string(__LINE__);
     auto it = device_localities.find(tf_gpu_id);
+    LOG(INFO) << "## L" << std::to_string(__LINE__);
     if (it == device_localities.end()) {
       return errors::Internal("Failed to find DeviceLocality for GPU device ",
                               tf_gpu_id.value());
     }
+    LOG(INFO) << "## L" << std::to_string(__LINE__);
     TF_RETURN_IF_ERROR(CreateGPUDevice(options, name_prefix, tf_gpu_id, bytes,
                                        it->second, devices));
   }
@@ -1082,25 +1086,33 @@ Status BaseGPUDeviceFactory::CreateGPUDevice(const SessionOptions& options,
   CHECK_GE(tf_gpu_id.value(), 0);
   const string device_name =
       strings::StrCat(name_prefix, "/device:GPU:", tf_gpu_id.value());
+  LOG(INFO) << "## L" << std::to_string(__LINE__);
   GpuIdUtil::CheckValidTfGpuId(tf_gpu_id);
+  LOG(INFO) << "## L" << std::to_string(__LINE__);
   PlatformGpuId platform_gpu_id;
+  LOG(INFO) << "## L" << std::to_string(__LINE__);
   TF_RETURN_IF_ERROR(
       GpuIdManager::TfToPlatformGpuId(tf_gpu_id, &platform_gpu_id));
   int numa_node = dev_locality.numa_node();
-
+  LOG(INFO) << "## L" << std::to_string(__LINE__);
   se::StreamExecutor* se =
       GpuIdUtil::ExecutorForPlatformGpuId(platform_gpu_id).ValueOrDie();
   const se::DeviceDescription& desc = se->GetDeviceDescription();
+  LOG(INFO) << "## L" << std::to_string(__LINE__);
   GPUProcessState* process_state = GPUProcessState::singleton();
+  LOG(INFO) << "## L" << std::to_string(__LINE__);
   Allocator* gpu_allocator = process_state->GetGPUAllocator(
       options.config.gpu_options(), tf_gpu_id, memory_limit);
+  LOG(INFO) << "## L" << std::to_string(__LINE__);
   if (gpu_allocator == nullptr) {
     return errors::Internal("Failed to get memory allocator for TF GPU ",
                             tf_gpu_id.value(), " with ", memory_limit,
                             " bytes of memory.");
   }
   AllocatorStats stats;
+  LOG(INFO) << "## L" << std::to_string(__LINE__);
   gpu_allocator->GetStats(&stats);
+  LOG(INFO) << "## L" << std::to_string(__LINE__);
   // 'memory_limit' is the required memory size, but if the allocator with given
   // tf_gpu_id was created before, we'll use it instead of creating a new one
   // (as TF gpu device is a shared resource), in which case the actual memory
@@ -1198,39 +1210,58 @@ Status BaseGPUDeviceFactory::GetDeviceLocalities(
     }
     DeviceLocality dev_locality;
     dev_locality.set_numa_node(numa_node);
+    LOG(INFO) << "## L" << std::to_string(__LINE__);
+
     dev_locality.set_bus_id(numa_node + 1);
+    LOG(INFO) << "## L" << std::to_string(__LINE__);
 
     // Set LocalLinks from InterconnectMaps.
     LocalLinks* links = dev_locality.mutable_links();
+    LOG(INFO) << "## L" << std::to_string(__LINE__);
     for (const InterconnectMap& imap : interconnects) {
       for (TfGpuId tf_gpu_dst : all_tf_gpu_ids) {
         PlatformGpuId platform_gpu_dst;
+        LOG(INFO) << "## L" << std::to_string(__LINE__);
         TF_RETURN_IF_ERROR(
             GpuIdManager::TfToPlatformGpuId(tf_gpu_dst, &platform_gpu_dst));
+        LOG(INFO) << "## L" << std::to_string(__LINE__);
         if (imap.directed_links.find({platform_gpu_id, platform_gpu_dst}) !=
             imap.directed_links.end()) {
+          LOG(INFO) << "## L" << std::to_string(__LINE__);
           InterconnectLink* ilink = links->add_link();
+          LOG(INFO) << "## L" << std::to_string(__LINE__);
           ilink->set_device_id(tf_gpu_dst.value());
+          LOG(INFO) << "## L" << std::to_string(__LINE__);
           ilink->set_type(imap.name);
+          LOG(INFO) << "## L" << std::to_string(__LINE__);
           ilink->set_strength(imap.strength);
+          LOG(INFO) << "## L" << std::to_string(__LINE__);
         }
       }
     }
-
+    LOG(INFO) << "## L" << std::to_string(__LINE__);
     // If this is one of multiple virtual GPUs on the same physical GPU
     // add high strength links to the others.
     for (TfGpuId tf_gpu_dst : all_tf_gpu_ids) {
       if (tf_gpu_id == tf_gpu_dst) continue;
       PlatformGpuId platform_gpu_dst;
+      LOG(INFO) << "## L" << std::to_string(__LINE__);
       TF_RETURN_IF_ERROR(
           GpuIdManager::TfToPlatformGpuId(tf_gpu_dst, &platform_gpu_dst));
+      LOG(INFO) << "## L" << std::to_string(__LINE__);
       if (platform_gpu_id == platform_gpu_dst) {
+        LOG(INFO) << "## L" << std::to_string(__LINE__);
         InterconnectLink* ilink = links->add_link();
+        LOG(INFO) << "## L" << std::to_string(__LINE__);
         ilink->set_device_id(tf_gpu_dst.value());
+        LOG(INFO) << "## L" << std::to_string(__LINE__);
         ilink->set_type("SAME_DEVICE");
+        LOG(INFO) << "## L" << std::to_string(__LINE__);
         ilink->set_strength(InterconnectMap::kSameDeviceStrength);
+        LOG(INFO) << "## L" << std::to_string(__LINE__);
       }
     }
+    LOG(INFO) << "## L" << std::to_string(__LINE__);
 
     (*localities)[tf_gpu_id] = dev_locality;
     VLOG(1) << "GPUDevice PlatformGpuId " << platform_gpu_id << " TfGpuId "
@@ -1238,6 +1269,7 @@ Status BaseGPUDeviceFactory::GetDeviceLocalities(
             << " numa: " << numa_node << " pci: " << desc.pci_bus_id()
             << " DeviceLocality: " << dev_locality.DebugString();
   }
+  LOG(INFO) << "## L" << std::to_string(__LINE__);
   return Status::OK();
 }
 
