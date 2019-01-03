@@ -38,6 +38,9 @@ limitations under the License.
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/core/util/env_var.h"
 
+#define MY_DEBUG_LINE(file, line)                                           \
+  LOG(INFO) << "## " << file <<  ":L" << std::to_string(line);
+
 namespace tensorflow {
 namespace {
 
@@ -90,15 +93,18 @@ Allocator* GPUProcessState::GetGPUAllocator(const GPUOptions& options,
                                             TfGpuId tf_gpu_id,
                                             size_t total_bytes) {
   CHECK(process_state_);
+  MY_DEBUG_LINE(__FILE__, __LINE__);
 #if GOOGLE_CUDA
   const string& allocator_type = options.allocator_type();
+  MY_DEBUG_LINE(__FILE__, __LINE__);
   mutex_lock lock(mu_);
+  MY_DEBUG_LINE(__FILE__, __LINE__);
   GpuIdUtil::CheckValidTfGpuId(tf_gpu_id);
-
+  MY_DEBUG_LINE(__FILE__, __LINE__);
   if (tf_gpu_id.value() >= static_cast<int64>(gpu_allocators_.size())) {
     gpu_allocators_.resize(tf_gpu_id.value() + 1);
   }
-
+  MY_DEBUG_LINE(__FILE__, __LINE__);
   AllocatorParts& allocator_parts = gpu_allocators_[tf_gpu_id.value()];
   if (allocator_parts.allocator.get() == nullptr) {
     // Validate allocator types.
@@ -106,32 +112,40 @@ Allocator* GPUProcessState::GetGPUAllocator(const GPUOptions& options,
       LOG(ERROR) << "Invalid allocator type: " << allocator_type;
       return nullptr;
     }
-
+    MY_DEBUG_LINE(__FILE__, __LINE__);
     PlatformGpuId platform_gpu_id;
     TF_CHECK_OK(GpuIdManager::TfToPlatformGpuId(tf_gpu_id, &platform_gpu_id));
+    MY_DEBUG_LINE(__FILE__, __LINE__);
     int bus_id = BusIdForGPU(tf_gpu_id);
     while (bus_id >= gpu_visitors_.size()) {
+      MY_DEBUG_LINE(__FILE__, __LINE__);
       gpu_visitors_.push_back({});
+      MY_DEBUG_LINE(__FILE__, __LINE__);
     }
+    MY_DEBUG_LINE(__FILE__, __LINE__);
     GPUMemAllocator* sub_allocator = new GPUMemAllocator(
         GpuIdUtil::ExecutorForPlatformGpuId(platform_gpu_id).ValueOrDie(),
         platform_gpu_id,
         (options.per_process_gpu_memory_fraction() > 1.0 ||
          options.experimental().use_unified_memory()),
         gpu_visitors_[bus_id], {});
+    MY_DEBUG_LINE(__FILE__, __LINE__);
     Allocator* gpu_allocator =
         new GPUBFCAllocator(sub_allocator, total_bytes, options,
                             strings::StrCat("GPU_", tf_gpu_id.value(), "_bfc"));
-
+    MY_DEBUG_LINE(__FILE__, __LINE__);
     // If true, checks for memory overwrites by writing
     // distinctive patterns on both ends of allocated memory.
     if (useCudaMemoryGuardAllocator()) {
+      MY_DEBUG_LINE(__FILE__, __LINE__);
       gpu_allocator = new GPUDebugAllocator(gpu_allocator, platform_gpu_id);
+      MY_DEBUG_LINE(__FILE__, __LINE__);
       gpu_allocator = new GPUNanResetAllocator(gpu_allocator, platform_gpu_id);
     } else if (useCudaMallocAllocator()) {
       // If true, passes all allocation requests through to cudaMalloc
       // useful for doing memory debugging with tools like cuda-memcheck
       // **WARNING** probably will not work in a multi-gpu scenario
+      MY_DEBUG_LINE(__FILE__, __LINE__);
       gpu_allocator =
           new GPUcudaMallocAllocator(gpu_allocator, platform_gpu_id);
     }
@@ -139,19 +153,25 @@ Allocator* GPUProcessState::GetGPUAllocator(const GPUOptions& options,
     Allocator* recording_allocator = nullptr;
     if (process_state_->ProcessState::FLAGS_brain_gpu_record_mem_types) {
       ProcessState::MemDesc md;
+      MY_DEBUG_LINE(__FILE__, __LINE__);
       md.loc = ProcessState::MemDesc::GPU;
       md.dev_index = platform_gpu_id.value();
       md.gpu_registered = false;
       md.nic_registered = true;
+      MY_DEBUG_LINE(__FILE__, __LINE__);
       recording_allocator = new internal::RecordingAllocator(
           &process_state_->mem_desc_map_, gpu_allocator, md, &mu_);
+      MY_DEBUG_LINE(__FILE__, __LINE__);
     }
+    MY_DEBUG_LINE(__FILE__, __LINE__);
     allocator_parts = {std::unique_ptr<Allocator>(gpu_allocator), sub_allocator,
                        std::unique_ptr<Allocator>(recording_allocator)};
   }
   if (process_state_->ProcessState::FLAGS_brain_gpu_record_mem_types) {
+    MY_DEBUG_LINE(__FILE__, __LINE__);
     return allocator_parts.recording_allocator.get();
   } else {
+    MY_DEBUG_LINE(__FILE__, __LINE__);
     return allocator_parts.allocator.get();
   }
 #else
